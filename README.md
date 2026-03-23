@@ -1,140 +1,146 @@
-# Python example code for the George B. Moody PhysioNet Challenge 2026
+# PhysioNet 2026 Survival Benchmarking Framework
 
-## What's in this repository?
+This README documents the benchmarking framework that was added on top of the original PhysioNet Challenge template.
 
-This repository contains a simple example that illustrates how to format a Python entry for the [George B. Moody PhysioNet Challenge 2026](https://physionetchallenges.org/2026/). If you are participating in the 2026 Challenge, then we recommend using this repository as a template for your entry. You can remove some of the code, reuse other code, and add new code to create your entry. You do not need to use the models, features, and/or libraries in this example for your entry. We encourage a diversity of approaches to the Challenges.
+The original template README and Challenge-specific repository guidance have been preserved in [README.md.bak](/Users/hsi/Documents/Code/Moody/python-example-2026/README.md.bak).
 
-For this example, we implemented a random forest model with several simple features. (This simple example is **not** designed to perform well, so you should **not** use it as a baseline for your approach's performance.) You can try it by running the following commands on the Challenge training set. If you are using a relatively recent personal computer, then you should be able to run these commands from start to finish on a small subset (1000 records) of the training data in a few minutes or less.
+## What was added
 
-## How do I run these scripts?
+This repository now includes a modular, reproducible framework for predicting time to cognitive impairment diagnosis from polysomnography and tabular metadata.
 
-First, you can download and create data for these scripts by following the [instructions](https://github.com/physionetchallenges/python-example-2026?tab=readme-ov-file#how-do-i-create-data-for-these-scripts) in the following section.
+Added capabilities:
 
-Second, you can install the dependencies for these scripts by creating a Docker image (see below) or [virtual environment](https://docs.python.org/3/library/venv.html) and running
+- survival analysis with censoring;
+- multimodal inputs spanning raw PSG, engineered PSG features, and demographics;
+- classical, deep, signal-only, and multimodal model classes;
+- config-driven experiments and benchmark summaries; and
+- a Challenge-compatible baseline wrapper backed by the modular framework.
 
-    pip install -r requirements.txt
+## Repository layout
 
-You can train your model by running
+```text
+python-example-2026/
+    configs/
+    data/
+    experiments/
+    notebooks/
+    src/
+        data/
+        evaluation/
+        features/
+        models/
+        training/
+        utils/
+    tests/
+    run_experiment.py
+```
 
-    python train_model.py -d training_data -m model
+## Added modules
 
-where
+### Data pipeline
 
-- `training_data` (input; required) is a folder with the training data files, which must include the labels; and
-- `model` (output; required) is a folder for saving your model.
+- patient-level dataset indexing and survival target extraction in [src/data/loaders.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/data/loaders.py)
+- grouped train, validation, test splitting and grouped cross-validation in [src/data/splits.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/data/splits.py)
+- tensor dataset support for deep models in [src/data/datasets.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/data/datasets.py)
 
-You can run your trained model by running
+### Feature engineering
 
-    python run_model.py -d holdout_data -m model -o holdout_outputs
+Engineered PSG feature extraction is implemented in [src/features/psg_features.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/features/psg_features.py).
 
-where
+Extracted features include:
 
-- `holdout_data` (input; required) is a folder with the holdout data files, which will not necessarily include the labels;
-- `model` (input; required) is a folder for loading your model; and
-- `holdout_outputs` (output; required) is a folder for saving your model outputs.
+- sleep efficiency
+- REM latency
+- REM fraction and N3 fraction
+- AHI
+- oxygen desaturation metrics
+- arousal index
+- sleep fragmentation metrics
+- EEG spectral delta, theta, alpha, and beta power
+- sleep stage transition statistics
 
-The [Challenge website](https://physionetchallenges.org/2026/#data) provides a training database with a description of the contents and structure of the data files.
+Demographic features are implemented in [src/features/tabular.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/features/tabular.py).
 
-You can evaluate your model by pulling or downloading the [evaluation code](https://github.com/physionetchallenges/evaluation-2026) and running
+### Models
 
-    python evaluate_model.py -d <path_to_labels> -o <path_to_outputs> -s <path_to_scores>
+Implemented model families:
 
-where
+- `cox_ph`
+- `regularized_cox`
+- `random_survival_forest`
+- `xgboost_survival`
+- `deep_surv`
+- `discrete_time`
+- `deep_hit`
+- `cnn_survival`
+- `transformer_survival`
+- `multimodal_survival`
 
-- `path_to_labels`(input; required) is the path to the csv file containing the labels for the holdout data files (e.g. demographics.csv);
-- `path_to_outputs` (input; required) is the path to the csv file with your model's outputs for the data (e.g. demographics.csv); and
-- `path_to_scores` (output; optional) is file with a collection of scores for your model (e.g., scores.txt).
+Key model files:
 
-You can use the provided training set for the `training_data` and `holdout_data` files, but we will use different datasets for the validation and test sets, and we will not provide the labels to your code.
+- [src/models/classical.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/models/classical.py)
+- [src/models/deep.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/models/deep.py)
+- [src/models/signal.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/models/signal.py)
+- [src/models/multimodal.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/models/multimodal.py)
+- [src/models/ensemble.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/models/ensemble.py)
 
-## How do I create data for these scripts?
+### Training and evaluation
 
-Please see the [data](https://physionetchallenges.org/2026/#data) section of the website for more information about the Challenge data.
+- unified neural training loop in [src/training/trainer.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/training/trainer.py)
+- Cox and discrete-time survival losses in [src/training/losses.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/training/losses.py)
+- C-index, integrated Brier score, time-dependent AUC, bootstrap confidence intervals, and subgroup analysis in [src/evaluation/metrics.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/evaluation/metrics.py)
 
-## Which scripts I can edit?
+## Experiment runner
 
-Please edit the following script to add your code:
+Config-driven experiments run through [run_experiment.py](/Users/hsi/Documents/Code/Moody/python-example-2026/run_experiment.py).
 
-* `team_code.py` is a script with functions for training and running your trained model.
+Example configs:
 
-Please do **not** edit the following scripts. We will use the unedited versions of these scripts when running your code:
+- [configs/cox_baseline.yaml](/Users/hsi/Documents/Code/Moody/python-example-2026/configs/cox_baseline.yaml)
+- [configs/random_survival_forest.yaml](/Users/hsi/Documents/Code/Moody/python-example-2026/configs/random_survival_forest.yaml)
+- [configs/deep_surv.yaml](/Users/hsi/Documents/Code/Moody/python-example-2026/configs/deep_surv.yaml)
+- [configs/multimodal_cnn.yaml](/Users/hsi/Documents/Code/Moody/python-example-2026/configs/multimodal_cnn.yaml)
+- [configs/benchmark_suite.yaml](/Users/hsi/Documents/Code/Moody/python-example-2026/configs/benchmark_suite.yaml)
 
-* `train_model.py` is a script for training your model.
-* `run_model.py` is a script for running your trained model.
-* `helper_code.py` is a script with helper functions that we used for our code. You are welcome to use them in your code.
+Run examples:
 
-These scripts must remain in the root path of your repository, but you can put other scripts and other files elsewhere in your repository.
+```bash
+python run_experiment.py --config configs/cox_baseline.yaml
+python run_experiment.py --config configs/benchmark_suite.yaml
+```
 
-## How do I train, save, load, and run my model?
+Outputs are written under `experiments/` and include:
 
-To train and save your model, please edit the `train_model` function in the `team_code.py` script. Please do not edit the input or output arguments of this function.
+- resolved configs
+- cached engineered features
+- per-model metrics
+- subgroup evaluation tables
+- benchmark summary tables
 
-To load and run your trained model, please edit the `load_model` and `run_model` functions in the `team_code.py` script. Please do not edit the input or output arguments of these functions.
+## Challenge compatibility
 
-## How do I run these scripts in Docker?
+The modular framework is connected to the Challenge entry points through [team_code.py](/Users/hsi/Documents/Code/Moody/python-example-2026/team_code.py) and [src/utils/challenge_baseline.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/utils/challenge_baseline.py).
 
-Docker and similar platforms allow you to containerize and package your code with specific dependencies so that your code can be reliably run in other computational environments.
+That preserves compatibility with the existing root scripts while keeping implementation details in `src/`.
 
-To increase the likelihood that we can run your code, please [install](https://docs.docker.com/get-docker/) Docker, build a Docker image from your code, and run it on the training data. To quickly check your code for bugs, you may want to run it on a small subset of the training data, such as 1000 records.
+## Reproducibility
 
-If you have trouble running your code, then please try the follow steps to run the example code.
+- seeded execution in [src/utils/seed.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/utils/seed.py)
+- config loading in [src/utils/config.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/utils/config.py)
+- run artifact writing in [src/utils/io.py](/Users/hsi/Documents/Code/Moody/python-example-2026/src/utils/io.py)
+- cached deterministic engineered feature extraction
+- group-aware data splitting
 
-1. Create a folder `example` in your home directory with several subfolders.
+## Tests
 
-        user@computer:~$ cd ~/
-        user@computer:~$ mkdir example
-        user@computer:~$ cd example
-        user@computer:~/example$ mkdir training_data holdout_data model holdout_outputs
+Lightweight checks live in [tests/test_metrics.py](/Users/hsi/Documents/Code/Moody/python-example-2026/tests/test_metrics.py), [tests/test_tabular_features.py](/Users/hsi/Documents/Code/Moody/python-example-2026/tests/test_tabular_features.py), and [tests/test_config_loading.py](/Users/hsi/Documents/Code/Moody/python-example-2026/tests/test_config_loading.py).
 
-2. Download the training data from the [Challenge website](https://physionetchallenges.org/2026/#data). Put some of the training data in `training_data` and `holdout_data`. You can use some of the training data to check your code (and you should perform cross-validation on the training data to evaluate your algorithm).
+Run them with:
 
-3. Download or clone this repository in your terminal.
+```bash
+pytest tests
+```
 
-        user@computer:~/example$ git clone https://github.com/physionetchallenges/python-example-2026.git
+## Workspace note
 
-4. Build a Docker image and run the example code in your terminal.
-
-        user@computer:~/example$ ls
-        holdout_data  holdout_outputs  model  python-example-2026  training_data
-
-        user@computer:~/example$ cd python-example-2026/
-
-        user@computer:~/example/python-example-2026$ docker build -t image .
-
-        Sending build context to Docker daemon  [...]kB
-        [...]
-        Successfully tagged image:latest
-
-        user@computer:~/example/python-example-2026$ docker run -it -v ~/example/model:/challenge/model -v ~/example/holdout_data:/challenge/holdout_data -v ~/example/holdout_outputs:/challenge/holdout_outputs -v ~/example/training_data:/challenge/training_data image bash
-
-        root@[...]:/challenge# ls
-            Dockerfile             holdout_outputs        run_model.py
-            evaluate_model.py      LICENSE                training_data
-            helper_code.py         README.md      
-            holdout_data           requirements.txt
-
-        root@[...]:/challenge# python train_model.py -d training_data -m model -v
-
-        root@[...]:/challenge# python run_model.py -d holdout_data -m model -o holdout_outputs -v
-
-        root@[...]:/challenge# python evaluate_model.py -d holdout_data -o holdout_outputs
-        [...]
-
-        root@[...]:/challenge# exit
-        Exit
-
-## What else do I need?
-
-Please see the [evaluation code repository](https://github.com/physionetchallenges/evaluation-2026) for code and instructions for evaluating your entry using the Challenge scoring metric.
-
-## How do I learn more? How do I share more?
-
-Please see the [Challenge website](https://physionetchallenges.org/2026/) for more details. Please post questions and concerns on the [Challenge discussion forum](https://groups.google.com/forum/#!forum/physionet-challenges). Please do not make pull requests, which may share information about your approach.
-
-## Useful links
-
-* [Challenge website](https://physionetchallenges.org/2026/)
-* [MATLAB example code](https://github.com/physionetchallenges/matlab-example-2026)
-* [Evaluation code](https://github.com/physionetchallenges/evaluation-2026)
-* [Frequently asked questions (FAQ) for this year's Challenge](https://physionetchallenges.org/2026/faq/)
-* [Frequently asked questions (FAQ) about the Challenges in general](https://physionetchallenges.org/faq/)
+The current workspace snapshot still has an empty [data/training_data](/Users/hsi/Documents/Code/Moody/python-example-2026/data/training_data) directory, so real benchmark outputs cannot be generated until labeled training data is placed there.
