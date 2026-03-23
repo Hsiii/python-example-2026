@@ -1,0 +1,31 @@
+experiment:
+  name: deep_surv
+  seed: 42
+  output_dir: experiments
+
+dataset:
+  data_dir: data/training_data
+  channel_table_path: channel_table.csv
+
+features:
+  demographics: true
+  engineered_psg: true
+  raw_signal: false
+
+split:
+  mode: holdout
+  test_size: 0.2
+  val_size: 0.1
+
+model:
+  name: deep_surv
+  params:
+    hidden_dims: [128, 64]
+    dropout: 0.2
+    learning_rate: 0.001
+    batch_size: 32
+    max_epochs: 30
+    patience: 5
+
+evaluation:
+  num_time_points: 5

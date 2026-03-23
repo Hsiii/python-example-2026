@@ -1,0 +1,36 @@
+experiment:
+  name: multimodal_cnn
+  seed: 42
+  output_dir: experiments
+
+dataset:
+  data_dir: data/training_data
+  channel_table_path: channel_table.csv
+
+features:
+  demographics: true
+  engineered_psg: true
+  raw_signal: true
+  signal:
+    target_sample_rate: 128
+    duration_seconds: 1800
+
+split:
+  mode: holdout
+  test_size: 0.2
+  val_size: 0.1
+
+model:
+  name: multimodal_survival
+  params:
+    encoder_type: cnn
+    embedding_dim: 128
+    hidden_dim: 128
+    objective: cox
+    learning_rate: 0.001
+    batch_size: 8
+    max_epochs: 20
+    patience: 5
+
+evaluation:
+  num_time_points: 5

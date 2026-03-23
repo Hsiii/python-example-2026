@@ -1,0 +1,27 @@
+experiment:
+  name: cox_baseline
+  seed: 42
+  output_dir: experiments
+
+dataset:
+  data_dir: data/training_data
+  channel_table_path: channel_table.csv
+
+features:
+  demographics: true
+  engineered_psg: true
+  raw_signal: false
+
+split:
+  mode: holdout
+  test_size: 0.2
+  val_size: 0.1
+
+model:
+  name: cox_ph
+  params:
+    penalizer: 0.1
+    l1_ratio: 0.0
+
+evaluation:
+  num_time_points: 5

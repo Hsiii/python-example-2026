@@ -1,0 +1,45 @@
+experiment:
+  name: benchmark_suite
+  seed: 42
+  output_dir: experiments
+
+dataset:
+  data_dir: data/training_data
+  channel_table_path: channel_table.csv
+
+features:
+  demographics: true
+  engineered_psg: true
+  raw_signal: false
+
+split:
+  mode: holdout
+  test_size: 0.2
+  val_size: 0.1
+
+benchmark:
+  models:
+    - name: cox_ph
+      params:
+        penalizer: 0.1
+    - name: random_survival_forest
+      params:
+        n_estimators: 200
+        min_samples_split: 10
+        random_state: 42
+    - name: xgboost_survival
+      params:
+        num_boost_round: 200
+        max_depth: 4
+        learning_rate: 0.05
+    - name: deep_surv
+      params:
+        hidden_dims: [128, 64]
+        dropout: 0.2
+        learning_rate: 0.001
+        batch_size: 32
+        max_epochs: 30
+        patience: 5
+
+evaluation:
+  num_time_points: 5
